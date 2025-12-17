@@ -223,7 +223,7 @@ This process is managed by the `target_assignment` function, which returns the p
 
 #### B. Positive Sample Selection (Center-based)
 
-For a ground-truth box assigned to a specific level (P`i` with stride `S`), a feature map point $(x_{\text{grid}}, y_{\text{grid}})$ is considered a positive sample if it meets two conditions, both applied at the feature map resolution:
+For a ground-truth box assigned to a specific level (P`i` with stride `S`), a feature map point is considered a positive sample if it meets two conditions, both applied at the feature map resolution:
 
 **Condition 1: Inside the Bounding Box**
 The feature map point must correspond to an image center point that falls within the original ground-truth bounding box coordinates `x_min, y_min, x_max, y_max`. The image center coordinates `x_img, y_img` corresponding to the grid point are calculated based on the stride `S`:
@@ -252,7 +252,7 @@ A grid location is considered **inside the center sampling radius** if both cond
 
 .
 
-A location is selected as a positive sample if $\text{indices} = \text{in\_box} \land \text{rad}$.
+A location is selected as a positive sample if `indices = in_box and rad`.
 
 **Conflict Resolution (The "Farthest is Better" Rule):**
 It is possible for multiple ground-truth boxes to claim the same location `x_grid,  y_grid`. FCOS resolves this conflict using the object area. A location is assigned to the ground-truth box that has the **smallest area** among all candidates that overlap that point.
@@ -630,8 +630,8 @@ The model uses a subset of the main training data for validation, ensuring that 
 *   **Total Records:** The primary training dataset contains 40,000 records, of which 38,800 are usable for training.
 *   **Validation Set Source:** The validation dataset (`val_dataset`) is constructed by taking the **first 1200 records** from the training TFRecord file (`ttfrecord_path`).
 *   **Training Set Exclusion:** Correspondingly, the main training dataset (`train_dataset`) is constructed by **skipping the first 1200 records** from the same TFRecord file.
-*   This setup ensures that the $1200$ records used for validation are exclusive and not used during the main training loop, thus providing an unbiased measure of model performance.
-*   The validation process measures Classification Loss, Regression Loss, Centerness Loss, and Mean Average Precision (mAP). The validation loss ($\text{val\_cl}$) is tracked, and an early stopping mechanism is implemented if the validation loss does not decrease after 7 epochs.
+*   This setup ensures that the 1200 records used for validation are exclusive and not used during the main training loop, thus providing an unbiased measure of model performance.
+*   The validation process measures Classification Loss, Regression Loss, Centerness Loss, and Mean Average Precision (mAP). The validation loss (Val_cls) is tracked, and an early stopping mechanism is implemented if the validation loss does not decrease after 7 epochs.
 
 ## Inferenece Pipeline
 FCOS model inference uses Camera for the realtime detection and optimised the forward pass using **@tf.function**.
