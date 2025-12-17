@@ -652,10 +652,13 @@ The following where the preprocessing done before feeding the model.
 - The model demonstrates reliable person detection across varying scales and aspect ratios.
 
 <img width="641" height="553" alt="Screenshot 2025-12-15 102946" src="https://github.com/user-attachments/assets/9e9b26f7-385d-42c9-81bb-f324a0507b19" />
+Qualitative inference results of the custom FCOS model trained on the COCO Person class, demonstrating robustness across indoor and outdoor scenes with crowded scenario.
 
 <img width="622" height="551" alt="Screenshot 2025-12-15 100831" src="https://github.com/user-attachments/assets/472c99aa-2492-493f-af99-4bf88f676e69" />
+Qualitative inference results of the custom FCOS model trained on the COCO Person class, demonstrating robustness across indoor and outdoor scenes.
 
 <img width="642" height="627" alt="image" src="https://github.com/user-attachments/assets/11e01fb9-6a0e-42a3-afce-8394f45ede05" />
+Qualitative inference results of the custom FCOS model trained on the COCO Person class, demonstrating robustness across indoor and outdoor scenes.
 
 ## Design Trade-offs
 
