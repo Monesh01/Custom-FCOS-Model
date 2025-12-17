@@ -633,6 +633,10 @@ The model uses a subset of the main training data for validation, ensuring that 
 *   This setup ensures that the 1200 records used for validation are exclusive and not used during the main training loop, thus providing an unbiased measure of model performance.
 *   The validation process measures Classification Loss, Regression Loss, Centerness Loss, and Mean Average Precision (mAP). The validation loss (Val_cls) is tracked, and an early stopping mechanism is implemented if the validation loss does not decrease after 7 epochs.
 
+## Logs Monitoring
+We monitor the logs of the Custom Fcos model using Mlflow uim which gives excellent graphs of logs statistics metrics and cross platform monitoring over wifi. 
+This all makes it a better suits for a logs monitoring effficent and no memory spikes in the middle of the training.
+
 ## Inferenece Pipeline
 FCOS model inference uses Camera for the realtime detection and optimised the forward pass using **@tf.function**.
 The following where the preprocessing done before feeding the model.
