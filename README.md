@@ -622,6 +622,22 @@ The `per_class_nms` function applies Non-Maximum Suppression independently for e
 - The indices returned by the NMS operation are used to select the final boxes and scores for that class.
 - The filtered predictions from all classes are combined to produce the final set of non-redundant detections.
 
+### Score Interpretation
+
+The score shown on each predicted bounding box represents the **classification probability**, not the overall bounding box confidence.
+
+In FCOS, the final score used internally for ranking and Non-Maximum Suppression (NMS) is computed as:
+
+score = cls_prob × centerness
+
+This combined score reflects both:
+- the likelihood of the object belonging to a class, and
+- the spatial quality of the prediction.
+
+However, for visualization purposes, only the **cube root of the (`score`)** is displayed. This value represents the model’s belief that the detected object belongs to the target class and is more intuitive for human interpretation.
+
+The centerness term is used internally to suppress low-quality or off-center predictions and is **not a direct confidence measure**.
+
 
 ### Validation Data Split Schema
 
