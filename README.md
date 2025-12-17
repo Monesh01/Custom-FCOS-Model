@@ -95,7 +95,7 @@ The FCOS model utilizes a custom backbone incorporating bottleneck blocks and an
 The custom backbone begins processing an input image shape of $$. The feature extraction relies heavily on the **bottleneck block** and specific activation functions:
 
 1. Backbone Feature Extraction (C1, C2, C3, C4, C5):
-The backbone uses the **Exponential Linear Unit (ELU)** activation function denoted mathematically as ELU(x) = { x ​if x>0 else α(ex−1) } for the stability of the Gradients and the smooth curve for the negative side which also gives smooth gradient flow.
+The backbone uses the **Exponential Linear Unit (ELU)** activation function denoted mathematically as `ELU(x) = { x ​if x > 0 else α(ex−1) }` for the stability of the Gradients and the smooth curve for the negative side which also gives smooth gradient flow.
 
 A bottleneck block structure generally includes several components:
    -> Initial Convolutions:** 1x1 Conv, followed by GroupNormalization (GN), and then ELU activation.
@@ -179,8 +179,8 @@ The outputs from the head towers are passed into three distinct 1x1 convolution 
 
 **1. Classification Head (`self.cls_head`):**
 *   **Purpose:** Predicts the class score for each spatial location.
-*   **Structure:** A 1x1 Convolution layer that outputs **$N$ channels**, where $N$ is `self.num_classes`.
-*   **Initialization:** It uses a specialized bias initialization (`bias\_initializer=tf.constant\_initializer(bias\_val)`), calculated using a prior probability $p=0.05$: $\text{bias\_val} = -\text{np.log}((1 - p) / p)$. This initialization helps stabilize training by biasing the model toward predicting negative (background) samples initially.
+*   **Structure:** A 1x1 Convolution layer that outputs **$N$ channels**, where `N` is `self.num_classes`.
+*   **Initialization:** It uses a specialized bias initialization (`bias\_initializer=tf.constant\_initializer(bias\_val)`), calculated using a prior probability `p=0.05: bias = -np.log((1 - p) / p)`. This initialization helps stabilize training by biasing the model toward predicting negative (background) samples initially.
 
 **2. Regression Head (`self.reg_head`):**
 *   **Purpose:** Predicts the distance from the spatial location to the four boundaries of the bounding box (Left, Top, Right, Bottom).
@@ -213,45 +213,54 @@ Target assignment involves two main steps: **FPN Level Selection** (Area-based) 
 
 #### A. FPN Level Selection (Area-based)
 
-The first assignment rule ensures that objects of different sizes are assigned to their appropriate FPN level, mitigating the need for multiple anchors per location. This is achieved by calculating the area of the ground-truth box ($\text{Area} = (x_{\max} - x_{\min}) \times (y_{\max} - y_{\min})$) and using thresholds:
+The first assignment rule ensures that objects of different sizes are assigned to their appropriate FPN level, mitigating the need for multiple anchors per location. This is achieved by calculating the area of the ground-truth box `Area = (x_max - xmin) \(y_max - y_min)` and using thresholds:
 
-*   Objects with $\text{Area} \le 4096$ are assigned to level **P2** (Stride $S=4$).
-*   Objects with $4096 < \text{Area} \le 16384$ are assigned to level **P3** (Stride $S=8$).
-*   Objects with $16384 < \text{Area} \le 65536$ are assigned to level **P4** (Stride $S=16$).
-*   Objects with $\text{Area} > 65536$ are assigned to level **P5** (Stride $S=32$).
+*   Objects with `Area = 4096` are assigned to level **P2** (Stride `S=4`).
+*   Objects with `4096 < Area = 16384` are assigned to level **P3** (Stride `S=8`).
+*   Objects with `16384 <  Area = 65536` are assigned to level **P4** (Stride `S=16`).
+*   Objects with `Area > 65536` are assigned to level **P5** (Stride `S=32`).
 This process is managed by the `target_assignment` function, which returns the pyramid level (`p_tar`) and its corresponding stride (`stride_`) for each ground-truth box.
 
 #### B. Positive Sample Selection (Center-based)
 
-For a ground-truth box assigned to a specific level (P$i$ with stride $S$), a feature map point $(x_{\text{grid}}, y_{\text{grid}})$ is considered a positive sample if it meets two conditions, both applied at the feature map resolution:
+For a ground-truth box assigned to a specific level (P`i` with stride `S`), a feature map point $(x_{\text{grid}}, y_{\text{grid}})$ is considered a positive sample if it meets two conditions, both applied at the feature map resolution:
 
 **Condition 1: Inside the Bounding Box**
-The feature map point must correspond to an image center point that falls within the original ground-truth bounding box coordinates $(x_{\min}, y_{\min}, x_{\max}, y_{\max})$. The image center coordinates $(\mathbf{x}_{\text{img}}, \mathbf{y}_{\text{img}})$ corresponding to the grid point are calculated based on the stride $S$:
-$$\mathbf{x}_{\text{img}} = (\mathbf{x}_{\text{grid}} \times S) + S/2$$
-$$\mathbf{y}_{\text{img}} = (\mathbf{y}_{\text{grid}} \times S) + S/2$$
+The feature map point must correspond to an image center point that falls within the original ground-truth bounding box coordinates `x_min, y_min, x_max, y_max`. The image center coordinates `x_img, y_img` corresponding to the grid point are calculated based on the stride `S`:
+`x_img = (x_grid \ S) + S/2`
+`y_img = (y_grid \ S) + S/2`
 The point is "in box" if:
-$$\text{in\_box} = (\mathbf{x}_{\text{img}} \ge x_{\min}) \land (\mathbf{x}_{\text{img}} \le x_{\max}) \land (\mathbf{y}_{\text{img}} \ge y_{\min}) \land (\mathbf{y}_{\text{img}} \le y_{\max})$$
+`in_box = (x_img > x_min and x_img < x_max) and (y_img > y_min and y_img < y_max)`
 .
 
 **Condition 2: Inside the Center Region (FCOS modification)**
 To prevent multiple objects competing for central locations, FCOS only assigns positive labels to points near the center of the ground-truth box. This is defined using a center region "radius" calculation:
-The center coordinates on the feature grid are:
-$$x_{\text{center}} = \frac{(x_{\min} + x_{\max}) / 2}{S}$$
-$$y_{\text{center}} = \frac{(y_{\min} + y_{\max}) / 2}{S}$$
-The radius is derived from the box size relative to the stride, ensuring a minimum radius of 1.0:
-$$\text{radius}_{\text{x}} = \max\left(1.0, 1.0 \times \frac{x_{\max} - x_{\min}}{S}\right)$$
-$$\text{radius}_{\text{y}} = \max\left(1.0, 1.0 \times \frac{y_{\max} - y_{\min}}{S}\right)$$
-A grid point is "in radius" if:
-$$\text{rad} = \left(|\mathbf{x}_{\text{grid}} - x_{\text{center}}| \le \text{radius}_{\text{x}}\right) \land \left(|\mathbf{y}_{\text{grid}} - y_{\text{center}}| \le \text{radius}_{\text{y}}\right)$$
+The center of the bounding box in feature-map coordinates is computed as:
+
+x_center = ((x_min + x_max) / 2) / S  
+y_center = ((y_min + y_max) / 2) / S  
+
+The radius is derived from the bounding box size relative to the stride `S`, with a minimum radius of 1.0:
+
+radius_x = max(1.0, (x_max - x_min) / S)  
+radius_y = max(1.0, (y_max - y_min) / S)  
+
+A grid location is considered **inside the center sampling radius** if both conditions are satisfied:
+
+|x_grid − x_center| ≤ radius_x  
+|y_grid − y_center| ≤ radius_y
+
 .
 
 A location is selected as a positive sample if $\text{indices} = \text{in\_box} \land \text{rad}$.
 
 **Conflict Resolution (The "Farthest is Better" Rule):**
-It is possible for multiple ground-truth boxes to claim the same location $(x_{\text{grid}}, y_{\text{grid}})$. FCOS resolves this conflict using the object area. A location is assigned to the ground-truth box that has the **smallest area** among all candidates that overlap that point.
+It is possible for multiple ground-truth boxes to claim the same location `x_grid,  y_grid`. FCOS resolves this conflict using the object area. A location is assigned to the ground-truth box that has the **smallest area** among all candidates that overlap that point.
 The `assigned_area` tensor keeps track of the area of the object currently assigned to each location. A location update occurs only if the current box's area is smaller than the already assigned area (initialized to infinity).
+update_mask is computed as:
 
-$$\text{update\_mask} = \text{indices} \land (\text{box\_area} < \text{assigned\_area}_{\text{nonzero}})$$
+update_mask = indices AND (box_area < assigned_area_nonzero)
+
 The `final_mask` represents the coordinates that are updated by the current ground-truth box.
 
 ### 2. Target Tensors Creation
@@ -266,130 +275,222 @@ For positive samples, the classification target tensor is updated to reflect the
 
 #### B. Regression Targets (`reg_targets`)
 
-Regression targets represent the normalized distances from the center point $(\mathbf{x}_{\text{img}}, \mathbf{y}_{\text{img}})$ to the four sides of the assigned ground-truth box (Left, Top, Right, Bottom), relative to the feature map stride $S$.
+Regression targets represent the normalized distances from the center point (x_img, y_img) to the four sides of the assigned ground-truth bounding box (Left, Top, Right, Bottom), relative to the feature map stride `S`.
 
-The normalized distances are calculated as:
-$$l = (\mathbf{x}_{\text{img}} - x_{\min}) / S$$
-$$t = (\mathbf{y}_{\text{img}} - y_{\min}) / S$$
-$$r = (x_{\max} - \mathbf{x}_{\text{img}}) / S$$
-$$b = (y_{\max} - \mathbf{y}_{\text{img}}) / S$$
-The target regression tensor is stacked as $\text{ltrb} = [l, t, r, b]$. This 4-channel tensor is what the regression head is trained to predict.
+The normalized distances are computed as:
+
+l = (x_img - x_min) / S  
+t = (y_img - y_min) / S  
+r = (x_max - x_img) / S  
+b = (y_max - y_img) / S  
+
+The regression target is stacked as:
+
+ltrb = [l, t, r, b]
+
+This 4-channel tensor is used as the supervision signal for the regression head during training.
+
 
 #### C. Centerness Targets (`ctr_targets`)
 
-The centerness target is calculated only for positive samples and is designed to penalize locations far from the center of the assigned bounding box. This target is a scalar value (between 0 and 1) derived from the regression targets ($l, t, r, b$):
+The centerness target is calculated only for positive samples and is designed to penalize locations far from the center of the assigned bounding box. This target is a scalar value (between 0 and 1) derived from the regression targets (l, t, r, b):
 
-$$\text{Centerness} = \sqrt{\left(\frac{\min(l, r)}{\max(l, r) + 1e-6}\right) \times \left(\frac{\min(t, b)}{\max(t, b) + 1e-6}\right)}$$
-.
+Centerness is computed as the geometric mean of normalized left–right and top–bottom distances:
 
-A value close to 1 indicates the location is near the center, while a value close to 0 indicates it is near the edge, resulting in a lower weight during centerness loss calculation. The centerness target tensor is initialized as zeros with shape $(\text{Size}, \text{Size}, 1)$.
+centerness = sqrt(
+    (min(l, r) / (max(l, r) + 1e-6)) *
+    (min(t, b) / (max(t, b) + 1e-6))
+)
+
+A value close to 1 indicates the location is near the center, while a value close to 0 indicates it is near the edge, resulting in a lower weight during centerness loss calculation. The centerness target tensor is initialized as zeros with shape `(Size, Size, 1)`.
 
 ## Loss Functions 
 The FCOS model uses three distinct loss functions, applied simultaneously, covering classification, bounding box regression, and centerness prediction. These losses are normalized by the total number of positive locations across all FPN levels.
 
 ### 1. Classification Loss: Focal Loss
 
-The classification loss is calculated using **Focal Loss** ($\mathcal{L}_{\text{cls}}$), which addresses the imbalance between foreground and background samples.
+The classification loss is calculated using **Focal Loss** (L_cls), which addresses the imbalance between foreground and background samples.
 
-The loss is defined based on the standard Binary Cross-Entropy (BCE) combined with a modulating factor derived from the prediction confidence ($p_t$).
+The loss is defined based on the standard Binary Cross-Entropy (BCE) combined with a modulating factor derived from the prediction confidence (p_t).
 
 **A. Binary Cross-Entropy (BCE) Calculation:**
-The process begins by calculating the BCE between the prediction logits ($\text{cls\_out}$) and the binary class targets ($\text{cls\_target}$):
-$$\text{BCE} = \text{tf.nn.sigmoid\_cross\_entropy\_with\_logits}(\text{labels}=\text{cls\_target}, \text{logits}=\text{cls\_out})$$.
+The process begins by computing the binary cross-entropy (BCE) loss between the classification prediction logits and the binary class targets:
+
+BCE = tf.nn.sigmoid_cross_entropy_with_logits(
+    labels = cls_target,
+    logits = cls_out
+)
+
 
 **B. Modulating Factor Components:**
-1.  **Probability of Target ($p_t$):** This represents the model's confidence in the assigned ground-truth class. It is based on the sigmoid-activated prediction ($\text{pred}$):
-    $$p = \text{tf.sigmoid}(\text{cls\_out})$$.
-    $$p_t = \begin{cases} \text{pred} & \text{if } \text{target} = 1.0 \\ 1.0 - \text{pred} & \text{if } \text{target} = 0.0 \end{cases}$$
-    ($p_t$ is implemented using `tf.where`).
+1.  **Probability of Target (p_t):** This represents the model's confidence in the assigned ground-truth class is computed from the sigmoid-activated classification prediction:
 
-2.  **Alpha Factor ($\alpha$):** This weights positive and negative examples ($\alpha=0.25$ by default):
-    $$\alpha_{\text{factor}} = \begin{cases} \alpha & \text{if } \text{target} = 1.0 \\ 1.0 - \alpha & \text{if } \text{target} = 0.0 \end{cases}$$.
+p = tf.sigmoid(cls_out)
 
-3.  **Focal Weight:** This term reduces the loss contribution from easy (well-classified) examples using the focusing parameter $\gamma$ ($\gamma=2.0$ by default):
-    $$\text{Focal\_Weight} = \alpha_{\text{factor}} \times (1.0 - p_t)^{\gamma}$$.
+The target-aligned probability p_t is defined as:
+
+- p_t = p, if target == 1.0
+- p_t = 1.0 - p, if target == 0.0
+
+In the implementation, p_t is computed using `tf.where` for numerical stability and vectorized execution.
+
+
+2.  **Alpha Factor ($\alpha$):** This term weights positive and negative examples (with alpha = 0.25 by default):
+
+alpha_factor is defined as:
+
+- alpha_factor = alpha, if target == 1.0
+- alpha_factor = 1.0 - alpha, if target == 0.0
+
+
+3.  **Focal Weight:** This term reduces the loss contribution from easy (well-classified) examples using the focusing parameter gamma (gamma = 2.0 by default):
+
+focal_weight = alpha_factor * (1.0 - p_t) ** gamma
+
 
 **C. Focal Loss per Element:**
-$$\mathcal{L}_{\text{cls, element}} = \text{Focal\_Weight} \times \text{BCE}$$.
+The element-wise classification loss is computed as:
+
+cls_loss_element = focal_weight * BCE
+
 
 **D. Total Classification Loss:**
-The final loss is the sum over all elements, normalized by the total number of positive samples ($\text{num\_pos}$):
-$$\mathcal{L}_{\text{cls}} = \frac{\sum_{\text{all locations}} \mathcal{L}_{\text{cls, element}}}{\text{normalizer}}$$
-where $\text{normalizer} = \max(1.0, \text{num\_pos})$. $\text{num\_pos}$ is the total number of positive locations across all FPN levels.
+The final classification loss is computed by summing the element-wise losses over all spatial locations and normalizing by the number of positive samples:
+
+cls_loss = sum(cls_loss_element) / normalizer
+
+where:
+
+normalizer = max(1.0, num_pos)
+
+Here, num_pos represents the total number of positive locations across all FPN levels.
+
 
 ### 2. Regression Loss: Generalized Intersection over Union (GIoU) Loss
 
-The bounding box regression loss uses the **GIoU Loss** ($\mathcal{L}_{\text{reg}}$). GIoU loss is calculated only over the locations identified as positive samples (foreground mask).
+The bounding box regression loss uses the **GIoU Loss** (L_reg). GIoU loss is calculated only over the locations identified as positive samples (foreground mask).
 
 **A. Bounding Box Transformation:**
-The predicted normalized LTRB distances ($\text{reg\_out}$) and the target LTRB distances ($\text{reg\_target}$) are converted back into absolute pixel coordinates $(x_{\min}, y_{\min}, x_{\max}, y_{\max})$ based on the feature map coordinates ($\text{coords}$) and the stride ($S$):
+The predicted normalized LTRB distances (`reg_out`) and the target LTRB distances (`reg_target`) are converted back into absolute image-space bounding box coordinates using the feature map locations (`coords`) and the stride `S`.
 
-$$\text{Box} = [x - l \cdot S, y - t \cdot S, x + r \cdot S, y + b \cdot S]$$
-where $l, t, r, b$ are the normalized distances, and $(x, y)$ are the center coordinates of the feature map point in image pixels. This is done separately for predicted boxes ($\text{pred\_box}$) and target boxes ($\text{target\_box}$).
+For each feature map location with image-space center coordinates `(x, y)`, the bounding box is decoded as:
+
+x_min = x - l * S  
+y_min = y - t * S  
+x_max = x + r * S  
+y_max = y + b * S  
+
+where `l`, `t`, `r`, and `b` are the normalized distances predicted by the regression head.
+
+This decoding is applied independently for:
+- predicted boxes (`pred_box`)
+- target boxes (`target_box`)
 
 **B. Calculation of IoU and Enclosing Area:**
-1.  **Intersection Area ($\text{inter\_area}$):** Calculated as the overlap between the predicted bounding box ($\text{pred\_box}_{\text{fg}}$) and the target bounding box ($\text{target\_box}_{\text{fg}}$).
-2.  **Union Area ($\text{union\_area}$):** Calculated as the sum of the areas of the predicted and target boxes minus the intersection area.
-3.  **IoU:**
-    $$\text{IoU} = \frac{\text{inter\_area}}{\text{union\_area} + 1e-6}$$.
-4.  **Smallest Enclosing Box Area ($G$):** This is the area of the smallest box that encloses both the prediction and the target box.
+1. **Intersection Area (`inter_area`):**  
+   Computed as the overlapping area between the predicted foreground bounding box (`pred_box_fg`) and the target foreground bounding box (`target_box_fg`).
+
+2. **Union Area (`union_area`):**  
+   Computed as the sum of the areas of the predicted and target boxes minus the intersection area.
+
+3. **Intersection over Union (IoU):**  
+
+   IoU = inter_area / (union_area + 1e-6)
+
+4.  **Smallest Enclosing Box Area (G):** This is the area of the smallest box that encloses both the prediction and the target box.
 
 **C. GIoU Loss Calculation:**
-The GIoU metric is calculated first, where the second term penalizes large gaps between the union and the enclosing box area ($G$):
-$$\text{GIoU} = \text{IoU} - \left(\frac{G - \text{union\_area}}{G + 1e-6}\right)$$.
+The Generalized IoU (GIoU) metric is computed by adding a penalty term that accounts for the area of the smallest enclosing box `G`, which penalizes large gaps between the union area and the enclosing box.
 
-The final GIoU Loss is defined as 1 minus the clipped GIoU value:
-$$\mathcal{L}_{\text{reg, element}} = 1.0 - \text{tf.clip\_by\_value}(\text{GIoU}, -1.0, 1.0)$$.
+GIoU is defined as:
 
-**D. Total Regression Loss:**
-The total regression loss is the sum of the element-wise losses over all positive locations, normalized by the total number of positive samples ($\text{total\_pos}$) found for classification:
-$$\mathcal{L}_{\text{reg}} = \frac{\sum_{\text{positive locations}} \mathcal{L}_{\text{reg, element}}}{\text{total\_pos}}$$
+GIoU = IoU - ((G - union_area) / (G + 1e-6))
 
-### 3. Centerness Loss: Binary Cross-Entropy (BCE)
+The element-wise regression loss is then computed as one minus the clipped GIoU value:
 
-The Centerness loss ($\mathcal{L}_{\text{ctr}}$) ensures that locations closer to the center of the assigned ground-truth box produce higher centerness scores. This is calculated only for positive samples using standard BCE.
+reg_loss_element = 1.0 - tf.clip_by_value(GIoU, -1.0, 1.0)
 
-**A. Centerness Loss Calculation:**
-The loss is computed using BCE between the centerness prediction logits ($\text{ctr\_pred}$) and the centerness targets ($\text{ctr\_target}$), restricted only to the positive coordinates ($\text{coord}$):
-$$\mathcal{L}_{\text{ctr, element}} = \text{tf.nn.sigmoid\_cross\_entropy\_with\_logits}(\text{labels}=\text{ctr\_target}, \text{logits}=\text{ctr\_pred})$$.
+### D. Total Regression Loss
 
-**B. Total Centerness Loss:**
-The total sum of this loss is normalized by the sum of the centerness target values of the positive samples ($\text{total\_num}$), which acts as a weighted normalizer:
-$$\mathcal{L}_{\text{ctr}} = \frac{\sum_{\text{positive locations}} \mathcal{L}_{\text{ctr, element}}}{\max(1.0, \sum_{\text{positive locations}} \text{ctr\_target} + 1e-6)}$$.
+The total regression loss is computed by summing the element-wise regression losses over all positive locations and normalizing by the total number of positive samples used for classification:
+
+reg_loss = sum(reg_loss_element) / total_pos
+
+Here, `total_pos` represents the total number of positive locations across all FPN levels.
+
+### 3. Centerness Loss (Binary Cross-Entropy)
+
+The centerness loss ensures that feature map locations closer to the center of the assigned ground-truth bounding box produce higher centerness scores. This loss is computed **only for positive samples** using binary cross-entropy (BCE).
+
+
+#### A. Centerness Loss Calculation
+
+The element-wise centerness loss is computed using binary cross-entropy between the centerness prediction logits and the centerness targets, restricted to positive locations only:
+
+ctr_loss_element = tf.nn.sigmoid_cross_entropy_with_logits(
+    labels = ctr_target,
+    logits = ctr_pred
+)
+
+
+#### B. Total Centerness Loss
+
+The total centerness loss is computed by summing the element-wise losses over positive locations and normalizing by the sum of centerness target values, which acts as a weighted normalizer:
+
+ctr_normalizer = max(1.0, sum(ctr_target) + 1e-6)
+ctr_loss = sum(ctr_loss_element) / ctr_normalizer
+
 
 ### Total Loss
 
-The final training objective is the sum of these three components:
-$$\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{cls}} + \mathcal{L}_{\text{reg}} + \mathcal{L}_{\text{ctr}}$$. (Note: In some implementations, $\mathcal{L}_{\text{ctr}}$ may be multiplied by a coefficient, shown as $\text{coef} \times \text{ctr}$ in one instance, but the basic form is the sum).
+The final training objective is defined as the sum of the classification, regression, and centerness losses:
+
+total_loss = cls_loss + reg_loss + ctr_loss
+
+Note: In some implementations, the centerness loss may be scaled by a coefficient (e.g., `coef * ctr_loss`), but the default formulation used here is a direct summation.
+
 
 ## LR Scheduler ( Cosine Decay Schema)
 The FCOS model utilizes a custom **Learning Rate (LR) Scheduler** featuring a warm-up phase followed by a cosine decay, and a structured **Training Schema** that incorporates distinct optimizers for the backbone and heads, gradient accumulation, and mixed-precision training.
 
-### Learning Rate (LR) Scheduler
 
-The custom FCOS model uses a learning rate scheduler designed to manage the LR across the training process, specifically incorporating a warm-up phase and a cosine decay component.
+### Learning Rate Scheduler (Warm-up + Cosine Decay)
 
-The scheduler relies on several defined parameters:
-*   Initial LR for Cosine Scheduling: $n_{\text{start}}$ (implicitly set to $n_{\text{max}}$ in the implementation of the formula)
-*   Minimum LR: $n_{\min} = 0.00000025$
-*   Maximum LR: $n_{\max} = 0.00005$
-*   Total training steps: $\text{total\_steps} = \text{epochs} \times \text{counts}$ (where $\text{counts} = 40000//4$)
-*   Warm-up steps: $\text{warm} = 5000$
-*   Cosine decay steps: $T = \text{total\_steps} - \text{warm}$
+The learning rate scheduler is defined using the following parameters:
 
-The `lr_scheduler` function operates based on the current step $t$:
+- Initial learning rate for warm-up (`lr_start`): implicitly set to `lr_max`
+- Minimum learning rate (`lr_min`): 0.00000025
+- Maximum learning rate (`lr_max`): 0.00005
+- Total training steps (`total_steps`): epochs × counts  
+  where `counts = 40000 // 4`
+- Warm-up steps (`warm_up`): 5000
+- Cosine decay steps (`T`): total_steps − warm_up
 
-**1. Warm-up Phase ($t \le \text{warm\_up}$):**
-During the initial 5000 warm-up steps, the learning rate increases linearly from $n_{\text{start}}$ (implied initial minimum) up to $n_{\text{max}}$.
-$$\text{lr} = n_{\text{start}} + \left(\frac{n_{\text{max}} - n_{\text{start}}}{\text{warm\_up}}\right) \times t$$
+The `lr_scheduler` function computes the learning rate based on the current training step `t`.
 
-**2. Cosine Decay Phase ($t > \text{warm\_up}$):**
-After the warm-up, the learning rate follows a cosine annealing curve, decaying from $n_{\text{max}}$ down to $n_{\min}$ over the remaining steps $T$.
-First, the step counter is adjusted: $t' = t - \text{warm\_up}$.
-The decay factor is calculated: $\text{decay} = t' / T$.
-The LR is then computed using the cosine function:
-$$\text{lr} = n_{\min} + \left(0.5 \times (n_{\text{max}} - n_{\min})\right) \times \left(1 + \cos(\text{decay} \times \pi)\right)$$
 
+#### 1. Warm-up Phase (t ≤ warm_up)
+
+During the warm-up phase, the learning rate increases linearly from the starting value to the maximum learning rate:
+
+lr = lr_start + ((lr_max - lr_start) / warm_up) * t
+
+
+#### 2. Cosine Decay Phase (t > warm_up)
+
+After the warm-up phase, cosine annealing is applied to gradually decay the learning rate from `lr_max` to `lr_min` over the remaining steps.
+
+First, the step index is shifted:
+
+t_prime = t - warm_up
+
+The decay ratio is computed as:
+
+decay = t_prime / T
+
+The learning rate is then calculated using cosine decay:
+
+lr = lr_min + 0.5 * (lr_max - lr_min) * (1 + cos(decay * pi))
 
 
 ### Training Schema of the Custom FCOS Model
@@ -401,20 +502,34 @@ The model uses the **AdamW** optimizer. Crucially the Training schema is based o
 The Lr schduler with Warmup is the responsible to avoid the Catastropic Forgetting for the on going chunk.
 For the Final Fine Tunining we used, 
 the backbone and the prediction heads are optimized separately using distinct learning rates, a common strategy for transfer learning or fine-tuning:
-*   **Backbone Optimizer (`bb_optimizer`):** Uses a base learning rate of $0.000001$ ($\text{lr} = 1\times10^{-6}$).
-*   **Heads Optimizer (`heads_optimizer`):** Uses a higher learning rate of $0.00001$ ($\text{lr} = 1\times10^{-5}$). This LR is 10 times the backbone LR, intended for fine-tuning the heads.
-*   Both optimizers (`bb_optimizer` and `heads_optimizer`) utilize a weight decay of $5\times10^{-3}$.
+- **Backbone Optimizer (`bb_optimizer`):**  
+  Uses a base learning rate of `0.000001` (lr = 1e-6).
+
+- **Heads Optimizer (`heads_optimizer`):**  
+  Uses a higher learning rate of `0.00001` (lr = 1e-5).  
+  This learning rate is **10× larger** than the backbone learning rate and is intended for fine-tuning the detection heads.
+
+- **Weight Decay:**  
+  Both optimizers (`bb_optimizer` and `heads_optimizer`) use a weight decay value of `5e-3`.
+
 
 #### 2. Mixed Precision Training
 The model is configured to use **mixed precision** (`mixed_float16`) globally, which helps speed up training by performing calculations using lower precision floating point numbers. Both the backbone and heads optimizers are wrapped in `mixed_precision.LossScaleOptimizer` to manage potential underflow issues caused by mixed precision.
 
 #### 3. Gradient Accumulation
-To simulate a larger batch size or stabilize gradient estimation, the model uses **gradient accumulation** over $\text{acc\_num} = 8$ steps.
-*   Gradients (`grads`) are calculated for the current batch.
-*   If the batch counter (`counter`) is less than 8, the gradients are accumulated in `acc_grads` variables.
-*   Once $\text{acc\_num}$ (8) batches have been processed, the accumulated gradients are retrieved, unscaled, and normalized by the accumulation count (`acc\_counter`).
-*   The normalized gradients (`acc\_norm\_u`) are then clipped by norm $10.0$.
-*   This shows the larger batch like intuition (`Batches = 8 x 4 = 32`)
+
+To simulate a larger effective batch size and stabilize gradient estimation, the model uses **gradient accumulation** over `acc_num = 8` steps.
+
+- Gradients (`grads`) are computed for each mini-batch.
+- If the batch counter (`counter`) is less than `acc_num`, gradients are accumulated into the `acc_grads` variables.
+- Once `acc_num` (8) batches have been processed:
+  - The accumulated gradients are retrieved
+  - Gradients are unscaled (for mixed precision training)
+  - Gradients are normalized by the accumulation count (`acc_counter`)
+- The normalized gradients (`acc_norm_u`) are clipped using a global norm of `10.0` before being applied.
+- This effectively simulates a larger batch size, following the intuition:
+
+  Effective batch size = 8 × 4 = 32
 
 #### 4. Differential Optimization for fine tuning on 40k records
 The normalized gradients are applied separately to the backbone and the heads:
@@ -422,12 +537,34 @@ The normalized gradients are applied separately to the backbone and the heads:
 *   Gradients corresponding to all other trainable variables (heads) are stored in `heads`.
 *   The `bb_optimizer` applies gradients only to the backbone variables, and the `heads_optimizer` applies gradients only to the head variables.
 
-#### 5. Training Fine tuning Process and Monitoring
-The training iterates through a defined number of epochs (`epochs = 10`).
-*   Losses ($\mathcal{L}_{\text{cls}}, \mathcal{L}_{\text{reg}}, \mathcal{L}_{\text{ctr}}$) are calculated for each batch. The total loss includes a coefficient ($\text{coef}=1.0$) for the centerness loss: $\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{cls}} + \mathcal{L}_{\text{reg}} + (\text{coef} \times \mathcal{L}_{\text{ctr}})$.
-*   The losses are scaled before gradient calculation (`total_loss = bb_optimizer.get_scaled_loss(total_loss)`).
-*   Metrics (Classification Loss, Regression Loss, Centerness Loss, and mean Average Precision (mAP)) are logged using `mlflow` at the end of each epoch.
-*   The model includes an early stopping mechanism that checks the validation loss (`val\_cl`). If the validation loss does not decrease after 7 epochs (`pat >= 7`), training is halted, and a checkpoint is saved.
+#### 5. Training Fine-Tuning Process and Monitoring
+
+The training process runs for a fixed number of epochs (`epochs = 10`) and follows a controlled fine-tuning strategy.
+
+- For each batch, the following losses are computed:
+  - Classification loss (`cls_loss`)
+  - Regression loss (`reg_loss`)
+  - Centerness loss (`ctr_loss`)
+
+- The total loss is computed as:
+
+  total_loss = cls_loss + reg_loss + (coef * ctr_loss)
+
+  where the centerness loss coefficient is set to `coef = 1.0`.
+
+- Before gradient computation, the total loss is scaled for mixed-precision training:
+
+  total_loss = bb_optimizer.get_scaled_loss(total_loss)
+
+- At the end of each epoch, the following metrics are logged using `mlflow`:
+  - Classification loss
+  - Regression loss
+  - Centerness loss
+  - Mean Average Precision (mAP)
+
+- An early stopping mechanism monitors the validation loss (`val_cl`):
+  - If the validation loss does not improve for 7 consecutive epochs (`pat >= 7`), training is stopped
+  - The best-performing model checkpoint is saved automatically
 
 ## NMS Per class Scoring
 The model utilizes a **Per-Class Non-Maximum Suppression (NMS)** schema for post-processing predictions and defines a specific approach for **Validation Data Split**, relying on a subset of the primary training dataset.
@@ -437,24 +574,54 @@ The model utilizes a **Per-Class Non-Maximum Suppression (NMS)** schema for post
 The NMS process is applied after the model generates raw predictions to filter out redundant bounding boxes and obtain the final set of detections. The model uses a technique called **Per-Class NMS**.
 
 #### 1. Prediction Generation
-First, raw model outputs (classification logits, regression distances, and centerness logits) from all FPN levels are aggregated:
-*   **Classification Probability ($\text{cls\_prob}$):** Calculated by applying the sigmoid function to the classification output logits ($\text{cls\_prob} = \text{tf.nn.sigmoid}(\text{Class\_pred})$).
-*   **Centerness Probability ($\text{ctr\_prob}$):** Calculated by applying the sigmoid function to the centerness output logits ($\text{ctr\_prob} = \text{tf.nn.sigmoid}(\text{Ctr\_pred})$).
-*   **Final Score:** The combined score for a location and a class is the product of the classification probability and the centerness probability ($\text{scores} = \text{cls\_prob} \times \text{ctr\_prob}$).
-*   **Location Filtering:** Only predictions with scores greater than $0.001$ are kept for further processing.
-*   **Bounding Box Calculation:** Regression outputs (LTRB distances) are scaled by the FPN stride ($S$) and used with the feature map coordinates to determine the final bounding box coordinates ($\text{img\_y} - t, \text{img\_x} - l, \text{img\_y} + b, \text{img\_x} + r$).
-*   All predictions are concatenated into `final_labels`, `final_scores`, and `final_bboxes`.
 
-#### 2. Per-Class NMS Implementation
-The `per_class_nms` function executes the Non-Maximum Suppression:
-*   It iterates through each class $c$ (from 0 to $\text{num\_classes}-1$).
-*   For each class, it filters the boxes and scores corresponding only to that class.
-*   The `tf.image.non_max_suppression` function is applied to these class-specific boxes and scores using the following hyperparameters:
-    *   **Maximum Output Size:** $\text{max\_per\_class} = 100$.
-    *   **IoU Threshold:** $\text{iou\_threshold} = 0.75$.
-    *   **Score Threshold:** $\text{score\_threshold} = 0.05$.
-*   The selected indices from the NMS operation are used to retrieve the final boxes and scores for that class.
-*   The results are combined across all classes to yield the final, non-redundant predictions.
+Raw model outputs from all FPN levels (classification logits, regression distances, and centerness logits) are first aggregated and processed.
+
+- **Classification Probability (`cls_prob`):**  
+  Computed by applying the sigmoid function to the classification logits:
+  
+  cls_prob = tf.nn.sigmoid(Class_pred)
+
+- **Centerness Probability (`ctr_prob`):**  
+  Computed by applying the sigmoid function to the centerness logits:
+  
+  ctr_prob = tf.nn.sigmoid(Ctr_pred)
+
+- **Final Score:**  
+  The confidence score for each location is computed as the product of classification probability and centerness probability:
+  
+  scores = cls_prob * ctr_prob
+
+- **Location Filtering:**  
+  Only predictions with scores greater than `0.001` are retained for further processing.
+
+- **Bounding Box Decoding:**  
+  The regression outputs (LTRB distances) are scaled by the corresponding FPN stride `S` and combined with the feature map coordinates to recover image-space bounding box coordinates:
+
+  x_min = img_x - l  
+  y_min = img_y - t  
+  x_max = img_x + r  
+  y_max = img_y + b  
+
+- All decoded predictions are concatenated into:
+  - `final_labels`
+  - `final_scores`
+  - `final_bboxes`
+
+#### 2. Per-Class Non-Maximum Suppression (NMS)
+
+The `per_class_nms` function applies Non-Maximum Suppression independently for each class.
+
+- The function iterates over each class index from `0` to `num_classes - 1`.
+- For each class:
+  - Bounding boxes and scores belonging only to that class are selected.
+  - `tf.image.non_max_suppression` is applied using the following parameters:
+    - Maximum output size per class: `max_per_class = 100`
+    - IoU threshold: `iou_threshold = 0.75`
+    - Score threshold: `score_threshold = 0.05`
+- The indices returned by the NMS operation are used to select the final boxes and scores for that class.
+- The filtered predictions from all classes are combined to produce the final set of non-redundant detections.
+
 
 ### Validation Data Split Schema
 
