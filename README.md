@@ -271,7 +271,7 @@ For every assigned positive location determined by `final_mask`, three types of 
 
 For positive samples, the classification target tensor is updated to reflect the presence of an object of a specific class.
 *   The class ID is used to index the correct channel in the classification target tensor, and a value of **1.0** is assigned to indicate a positive sample.
-*   The classification targets for each level (P2-P5) are initialized as zero tensors with shape $(\text{Size}, \text{Size}, \text{num\_classes})$.
+*   The classification targets for each level (P2-P5) are initialized as zero tensors with shape `(Size, Size, num_classes)`.
 
 #### B. Regression Targets (`reg_targets`)
 
