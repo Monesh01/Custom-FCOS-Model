@@ -1,4 +1,4 @@
-# Custom FCOS Objecct Detector (From Scratch - Tensorflow & Keras)
+# Custom FCOS Object Detector (From Scratch - Tensorflow & Keras)
 A lightweight, resource-aware implementation of the Fully Convolutional One Stage ( FCOS ) object detection framework
 built completely from scratch without pretrained Backbone using TensorFlow.
 
