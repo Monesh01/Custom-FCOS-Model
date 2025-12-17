@@ -1,0 +1,2 @@
+model_checkpoint_path: "Custom_FCOS_Final_Model"
+all_model_checkpoint_paths: "Custom_FCOS_Final_Model"
