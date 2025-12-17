@@ -651,6 +651,12 @@ The following where the preprocessing done before feeding the model.
 - Mean Average Precision (mAP@0.75 ~ 0.375 - 0.395) showed gradual improvement during fine-tuning, indicating effective learning despite reduced model capacity and dataset size.
 - The model demonstrates reliable person detection across varying scales and aspect ratios.
 
+<img width="641" height="553" alt="Screenshot 2025-12-15 102946" src="https://github.com/user-attachments/assets/9e9b26f7-385d-42c9-81bb-f324a0507b19" />
+
+<img width="622" height="551" alt="Screenshot 2025-12-15 100831" src="https://github.com/user-attachments/assets/472c99aa-2492-493f-af99-4bf88f676e69" />
+
+<img width="642" height="627" alt="image" src="https://github.com/user-attachments/assets/11e01fb9-6a0e-42a3-afce-8394f45ede05" />
+
 ## Design Trade-offs
 
 This project prioritizes interpretability and training stability over raw performance. Several architectural and training simplifications
@@ -674,6 +680,7 @@ were made to ensure feasibility under limited hardware resources.
 ## How to run
 The model code is simply one combined Code as CUSTOM_FCOS.py 
 Open CMD (through directory of the code) --> Type **python -u CUSTOM_FCOS.py > logfile.txt 2>&1
+
 The above is the simpliest way to run the code in the windows terminals for the efficieny over Jupyter Lab web page memory usage and memory spikes
 and Python IDLE storing the output logs and other variables in the memory for a long period gives periodic memory spikes and consumption.
 This execution method was chosen specifically to ensure stability during long training sessions where each epoch may take several hours.
