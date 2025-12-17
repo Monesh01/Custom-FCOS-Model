@@ -711,3 +711,9 @@ The above is the simpliest way to run the code in the windows terminals for the 
 and Python IDLE storing the output logs and other variables in the memory for a long period gives periodic memory spikes and consumption.
 This execution method was chosen specifically to ensure stability during long training sessions where each epoch may take several hours.
 
+### Pretrained Weights
+
+Pretrained weights for the final fine-tuned model are provided in the `weights/` directory.
+
+To run inference using the pretrained model, ensure the weights path is correctly set in `inference_custom_fcos.py`.
+
