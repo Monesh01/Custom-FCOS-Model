@@ -685,7 +685,7 @@ were made to ensure feasibility under limited hardware resources.
 
 ## How to run
 The model code is simply one combined Code as CUSTOM_FCOS.py 
-Open CMD (through directory of the code) --> Type **python -u CUSTOM_FCOS.py > logfile.txt 2>&1
+**Open CMD (through directory of the code) --> Type python -u CUSTOM_FCOS.py > logfile.txt 2>&1**
 
 The above is the simpliest way to run the code in the windows terminals for the efficieny over Jupyter Lab web page memory usage and memory spikes
 and Python IDLE storing the output logs and other variables in the memory for a long period gives periodic memory spikes and consumption.
