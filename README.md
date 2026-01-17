@@ -1,13 +1,13 @@
-# Custom FCOS Object Detector (From Scratch - Tensorflow & Keras)
+# Light Weight Custom FCOS Object Detector (From Scratch - Tensorflow & Keras)
 A lightweight, resource-aware implementation of the Fully Convolutional One Stage ( FCOS ) object detection framework
 built completely from scratch without pretrained Backbone using TensorFlow.
 
 ## Motivation
-This project was developed to understand and implement the FCOS object detection
+This project was developed to understand and implement the lightweight FCOS object detection
 architecture from first principles, without relying on prebuilt detection frameworks.
 
 Due to limited system resources (RAM, VRAM, GPU power and long training times),
-the model architecture and training strategy were carefully redesigned
+the model architecture and training strategy were carefully redesigned for **3.25 million parameters**
 to remain stable, technical and trainable under the conditions and limitations.
 This project urges to sacrifice the stable over raw performance.
 
@@ -85,6 +85,31 @@ This setup balances memory usage and data throughput under limited VRAM conditio
 
 ## Custom FCOS Model's Architecture 
 The CUstom FCOS Model's Architecture is in a conventional way of Backbone + FPN Generator, Heads Tower and output layers.
+
+## Model: "fcos_model"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ FPN (Functional)            [(None, 128, 128, 128),   2885024   
+                              (None, 64, 64, 128),               
+                              (None, 32, 32, 128),               
+                              (None, 16, 16, 128)]               
+                                                                 
+ sequential (Sequential)     (None, None, None, 64)    184832    
+                                                                 
+ sequential_1 (Sequential)   (None, None, None, 64)    184832    
+                                                                 
+ Classification (Conv2D)     multiple                  65        
+                                                                 
+ Regression (Conv2D)         multiple                  260       
+                                                                 
+ Centerness (Conv2D)         multiple                  65        
+                                                                 
+=================================================================
+
+Total params: 3,255,082
+Trainable params: 3,255,082
+Non-trainable params: 0
 
 ## FCOS Model's Backbone
 The Model uses Resnet Style -  Custom Backbone of 2.88 Million parameters along with the FPN generator.
@@ -502,15 +527,15 @@ The model uses the **AdamW** optimizer. Crucially the Training schema is based o
 The Lr schduler with Warmup is the responsible to avoid the Catastropic Forgetting for the on going chunk.
 For the Final Fine Tunining we used, 
 the backbone and the prediction heads are optimized separately using distinct learning rates, a common strategy for transfer learning or fine-tuning:
-- **Backbone Optimizer (`bb_optimizer`):**  
+- **Backbone Optimizer (`adamw_optimizer`):**  
   Uses a base learning rate of `0.000001` (lr = 1e-6).
 
-- **Heads Optimizer (`heads_optimizer`):**  
+- **Heads Optimizer (`adamw_optimizer`):**  
   Uses a higher learning rate of `0.00001` (lr = 1e-5).  
   This learning rate is **10× larger** than the backbone learning rate and is intended for fine-tuning the detection heads.
 
 - **Weight Decay:**  
-  Both optimizers (`bb_optimizer` and `heads_optimizer`) use a weight decay value of `5e-3`.
+  Both optimizers ('adamw_optimizer` and `adamw_optimizer`) use a weight decay value of `5e-3`.
 
 
 #### 2. Mixed Precision Training
@@ -535,7 +560,7 @@ To simulate a larger effective batch size and stabilize gradient estimation, the
 The normalized gradients are applied separately to the backbone and the heads:
 *   Gradients corresponding to variables belonging to the `FPN` layer (backbone) are stored in `bb_grads`.
 *   Gradients corresponding to all other trainable variables (heads) are stored in `heads`.
-*   The `bb_optimizer` applies gradients only to the backbone variables, and the `heads_optimizer` applies gradients only to the head variables.
+*   The `adamw_optimizer` applies gradients only to the backbone variables, and the `adamw_optimizer` applies gradients only to the head variables.
 
 #### 5. Training Fine-Tuning Process and Monitoring
 
@@ -652,6 +677,10 @@ The model uses a subset of the main training data for validation, ensuring that 
 ## Logs Monitoring
 We monitor the logs of the Custom Fcos model using Mlflow uim which gives excellent graphs of logs statistics metrics and cross platform monitoring over wifi. 
 This all makes it a better suits for a logs monitoring effficent and no memory spikes in the middle of the training.
+
+The model was trained on 40,000 images using a curriculum approach. While the first two runs (20k images) focused on initial feature alignment and backbone stabilization but the graphs and data for the first two run in the curriculum training was lost due to mlflow data corrupted.
+
+But the 3rd and 4th run along with the fine tuning of final phase has been given in the assests.
 
 ## Inferenece Pipeline
 FCOS model inference uses Camera for the realtime detection and optimised the forward pass using **@tf.function**.
