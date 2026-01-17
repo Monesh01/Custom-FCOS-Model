@@ -90,30 +90,33 @@ The CUstom FCOS Model's Architecture is in a conventional way of Backbone + FPN 
 ## 🏗️ Model Architecture
 The custom FCOS architecture utilizes a **Feature Pyramid Network (FPN)** backbone with anchor-free detection heads. By predicting centerness, the model avoids the complexity of manual anchor box tuning.
 
-**Model: "fcos_model"**
+**Model Name:** `fcos_model`
+
+```text
 _________________________________________________________________
  Layer (type)                Output Shape              Param #   
 =================================================================
- FPN (Functional)            [(None, 128, 128, 128),   2885024   
+ FPN (Functional)            [(None, 128, 128, 128),   2,885,024   
                               (None, 64, 64, 128),               
                               (None, 32, 32, 128),               
                               (None, 16, 16, 128)]               
                                                                  
- sequential (Sequential)     (None, None, None, 64)    184832    
+ sequential (Sequential)     (None, None, None, 64)     184,832    
                                                                  
- sequential_1 (Sequential)   (None, None, None, 64)    184832    
+ sequential_1 (Sequential)   (None, None, None, 64)     184,832    
                                                                  
- Classification (Conv2D)     multiple                  65        
+ Classification (Conv2D)     multiple                       65        
                                                                  
- Regression (Conv2D)         multiple                  260       
+ Regression (Conv2D)         multiple                      260       
                                                                  
- Centerness (Conv2D)         multiple                  65        
+ Centerness (Conv2D)         multiple                       65        
                                                                  
 =================================================================
-Total params: 3,255,082
-Trainable params: 3,255,082
-Non-trainable params: 0
+Total params:        3,255,082  
+Trainable params:    3,255,082  
+Non-trainable params:        0  
 _________________________________________________________________
+
 
 
 ## FCOS Model's Backbone
