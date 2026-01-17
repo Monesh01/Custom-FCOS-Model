@@ -91,7 +91,6 @@ The CUstom FCOS Model's Architecture is in a conventional way of Backbone + FPN 
 The custom FCOS architecture utilizes a **Feature Pyramid Network (FPN)** backbone with anchor-free detection heads. By predicting centerness, the model avoids the complexity of manual anchor box tuning.
 
 <details>
-<summary><b>Click to expand Model Summary (TensorFlow)</b></summary>
 
 Model: "fcos_model"
 _________________________________________________________________
