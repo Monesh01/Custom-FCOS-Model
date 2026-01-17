@@ -85,8 +85,15 @@ This setup balances memory usage and data throughput under limited VRAM conditio
 
 ## Custom FCOS Model's Architecture 
 The CUstom FCOS Model's Architecture is in a conventional way of Backbone + FPN Generator, Heads Tower and output layers.
+---
 
-## Model: "fcos_model"
+## 🏗️ Model Architecture
+The custom FCOS architecture utilizes a **Feature Pyramid Network (FPN)** backbone with anchor-free detection heads. By predicting centerness, the model avoids the complexity of manual anchor box tuning.
+
+<details>
+<summary><b>Click to expand Model Summary (TensorFlow)</b></summary>
+
+Model: "fcos_model"
 _________________________________________________________________
  Layer (type)                Output Shape              Param #   
 =================================================================
@@ -106,10 +113,11 @@ _________________________________________________________________
  Centerness (Conv2D)         multiple                  65        
                                                                  
 =================================================================
-
 Total params: 3,255,082
 Trainable params: 3,255,082
 Non-trainable params: 0
+_________________________________________________________________
+</details>
 
 ## FCOS Model's Backbone
 The Model uses Resnet Style -  Custom Backbone of 2.88 Million parameters along with the FPN generator.
