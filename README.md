@@ -116,8 +116,7 @@ Total params:        3,255,082
 Trainable params:    3,255,082  
 Non-trainable params:        0  
 _________________________________________________________________
-```markdown
-```text
+```
 
 
 ## FCOS Model's Backbone
