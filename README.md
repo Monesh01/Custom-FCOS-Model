@@ -724,6 +724,19 @@ The model was trained on 40,000 images using a curriculum approach. While the fi
 
 But the 3rd and 4th run along with the fine tuning of final phase has been given in the assests.
 
+## Training Results
+
+### 1) Curriculum Training 3rd Run 
+![3rd Run log metric graph](assets/3rd_Curriculum_Training.png)
+
+### 2) Curriculum Training 4th Run
+![4th RUn log metric graph](assets/4th_Curriculum_Training.png)
+
+### 3) Fine Tuning phase
+![Fine Tuning Final Phase graph](assets/fine_tuning.png)
+
+
+
 ## Inferenece Pipeline
 FCOS model inference uses Camera for the realtime detection and optimised the forward pass using **@tf.function**.
 The following where the preprocessing done before feeding the model.
