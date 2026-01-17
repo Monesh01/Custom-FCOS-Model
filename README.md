@@ -739,7 +739,8 @@ The following where the preprocessing done before feeding the model.
 
 - The custom FCOS model was successfully trained under strict memory constraints.
 - Training remained stable across epochs with controlled classification, regression, and centerness losses.
-- Mean Average Precision (mAP@0.75 ~ 0.375 - 0.395) showed gradual improvement during fine-tuning, indicating effective learning despite reduced model capacity and dataset size.
+- Approximate Average Precision (Approximate AP@0.75 ~ 0.375 - 0.395) showed gradual improvement during fine-tuning, indicating effective learning despite reduced model capacity and dataset size.
+- Aprox. AP or Trapz AP used for the simplicity.
 - The model demonstrates reliable person detection across varying scales and aspect ratios.
 
 <img width="641" height="553" alt="Screenshot 2025-12-15 102946" src="https://github.com/user-attachments/assets/9e9b26f7-385d-42c9-81bb-f324a0507b19" />
