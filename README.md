@@ -90,9 +90,7 @@ The CUstom FCOS Model's Architecture is in a conventional way of Backbone + FPN 
 ## 🏗️ Model Architecture
 The custom FCOS architecture utilizes a **Feature Pyramid Network (FPN)** backbone with anchor-free detection heads. By predicting centerness, the model avoids the complexity of manual anchor box tuning.
 
-<details>
-
-Model: "fcos_model"
+**Model: "fcos_model"**
 _________________________________________________________________
  Layer (type)                Output Shape              Param #   
 =================================================================
@@ -116,25 +114,59 @@ Total params: 3,255,082
 Trainable params: 3,255,082
 Non-trainable params: 0
 _________________________________________________________________
-</details>
+
 
 ## FCOS Model's Backbone
 The Model uses Resnet Style -  Custom Backbone of 2.88 Million parameters along with the FPN generator.
 The FCOS model utilizes a custom backbone incorporating bottleneck blocks and an FPN generator to extract multi-scale features, making specific use of activation functions and GroupNormalization layers throughout the process.
 
-### Custom Backbone Architecture and Activation Functions
+## Custom Backbone Architecture and Activation Functions
 
-The custom backbone begins processing an input image shape of $$. The feature extraction relies heavily on the **bottleneck block** and specific activation functions:
+The custom backbone begins processing an input image of shape **(H, W, 3)**.  
+Feature extraction relies heavily on **bottleneck blocks** and carefully selected **activation functions**.
 
-1. Backbone Feature Extraction (C1, C2, C3, C4, C5):
-The backbone uses the **Exponential Linear Unit (ELU)** activation function denoted mathematically as `ELU(x) = { x ​if x > 0 else α(ex−1) }` for the stability of the Gradients and the smooth curve for the negative side which also gives smooth gradient flow.
+---
 
-A bottleneck block structure generally includes several components:
-   -> Initial Convolutions:** 1x1 Conv, followed by GroupNormalization (GN), and then ELU activation.
-   -> 3x3 Conv: Followed by GN and ELU activation.
-   -> Expansion (1x1 Conv): Which increases the filter count (multiplying by 2).
-   -> Shortcut Path: If downsampling occurs (stride > 1) or the channel count changes, a 1x1 Conv is applied to the shortcut. The     shortcut is then added to the main path output, followed by GN and ELU activation.
-   -> Final Block Layers: The block concludes with a 3x3 Conv, GN, and ELU activation.
+### Backbone Feature Extraction (C1, C2, C3, C4, C5)
+
+The backbone uses the **Exponential Linear Unit (ELU)** activation function, defined as:
+
+ELU(x) = x , if x > 0  
+ELU(x) = α (eˣ − 1) , if x ≤ 0  
+
+ELU improves gradient stability and provides a smooth response for negative values, enabling better gradient flow during training.
+
+---
+
+### Bottleneck Block Structure
+
+A bottleneck block generally consists of the following components:
+
+- **Initial Convolution**
+  - 1×1 convolution
+  - Group Normalization (GN)
+  - ELU activation
+
+- **Spatial Convolution**
+  - 3×3 convolution
+  - GN
+  - ELU activation
+
+- **Expansion Layer**
+  - 1×1 convolution
+  - Expands the channel dimension (×2)
+
+- **Shortcut Path**
+  - Applied when stride > 1 or channel dimensions differ
+  - Uses a 1×1 convolution
+  - Added to the main path output
+  - Followed by GN and ELU activation
+
+- **Final Block Layer**
+  - 3×3 convolution
+  - GN
+  - ELU activation
+
 
 The initial stages use `filters=32`. For the first feature map (`c1`), the sequence is a 5x5 convolution (stride 2), GroupNormalization (16 groups), ELU activation, and a 2x2 MaxPooling (stride 2). Subsequent feature maps are derived using bottleneck blocks:
 *   `c2` uses two blocks (filters = 32).
